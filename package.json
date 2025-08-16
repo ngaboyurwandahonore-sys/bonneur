@@ -8,7 +8,9 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "db:reset": "rm -f agriconnect.db && npm run dev"
+    "db:reset": "rm -f agriconnect.db && npm run dev",
+    "server": "cd server && npm run dev",
+    "start:full": "concurrently \"npm run server\" \"npm run dev\""
   },
   "dependencies": {
     "@headlessui/react": "^2.2.7",
