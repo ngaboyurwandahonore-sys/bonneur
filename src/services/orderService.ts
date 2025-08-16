@@ -1,85 +1,59 @@
-import { mockDb } from './mockDatabase';
+import ApiService from './api';
 import { Order } from '../types';
 
 export class OrderService {
   static async getAllOrders(): Promise<Order[]> {
     try {
-      const rows = mockDb.getOrders();
-      
-      const orders = rows.map(row => ({
-        id: row.id,
-        customerId: row.customerId,
-        customerName: row.customerName,
-        customerPhone: row.customerPhone,
-        farmerId: row.farmerId,
-        products: row.products || [],
-        total: row.total,
-        status: row.status,
-        deliveryAddress: row.deliveryAddress,
-        estimatedDelivery: new Date(row.estimatedDelivery),
-        createdAt: new Date(row.createdAt),
-        notes: row.notes
+      const orders = await ApiService.getOrders();
+      return orders.map((order: any) => ({
+        ...order,
+        estimatedDelivery: new Date(order.estimatedDelivery),
+        createdAt: new Date(order.createdAt)
       }));
-
-      return orders;
     } catch (error) {
+      console.error('Error getting orders:', error);
       throw error;
     }
   }
 
   static async getOrdersByFarmer(farmerId: string): Promise<Order[]> {
     try {
-      const rows = mockDb.getOrdersByFarmer(farmerId);
-      
-      const orders = rows.map(row => ({
-        id: row.id,
-        customerId: row.customerId,
-        customerName: row.customerName,
-        customerPhone: row.customerPhone,
-        farmerId: row.farmerId,
-        products: row.products || [],
-        total: row.total,
-        status: row.status,
-        deliveryAddress: row.deliveryAddress,
-        estimatedDelivery: new Date(row.estimatedDelivery),
-        createdAt: new Date(row.createdAt),
-        notes: row.notes
+      const orders = await ApiService.getOrders(farmerId);
+      return orders.map((order: any) => ({
+        ...order,
+        estimatedDelivery: new Date(order.estimatedDelivery),
+        createdAt: new Date(order.createdAt)
       }));
-
-      return orders;
     } catch (error) {
+      console.error('Error getting farmer orders:', error);
       throw error;
     }
   }
 
   static async createOrder(orderData: Omit<Order, 'id' | 'createdAt'>): Promise<Order> {
     try {
-      const orderId = Date.now().toString();
-      const now = new Date().toISOString();
-      
-      const newOrder = {
+      const order = await ApiService.createOrder({
         ...orderData,
-        id: orderId,
-        createdAt: now,
         estimatedDelivery: orderData.estimatedDelivery.toISOString()
-      };
-
-      mockDb.createOrder(newOrder);
-
+      });
+      
       return {
-        ...orderData,
-        id: orderId,
-        createdAt: new Date()
+        ...order,
+        estimatedDelivery: new Date(order.estimatedDelivery),
+        createdAt: new Date(order.createdAt)
       };
     } catch (error) {
+      console.error('Error creating order:', error);
       throw error;
     }
   }
 
   static async updateOrderStatus(id: string, status: Order['status']): Promise<boolean> {
     try {
-      return mockDb.updateOrder(id, { status });
+      await ApiService.updateOrderStatus(id, status);
+      return true;
     } catch (error) {
+      console.error('Error updating order status:', error);
       throw error;
     }
   }
