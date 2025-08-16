@@ -1,9 +1,46 @@
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import { mockDb } from './mockDatabase';
 import { User } from '../types';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+// Simple browser-compatible mock implementations
+const mockBcrypt = {
+  async compare(password: string, hash: string): Promise<boolean> {
+    // For demo purposes, we'll do a simple comparison
+    // In a real app, this would be handled server-side
+    return password === hash;
+  },
+  
+  async hash(password: string, saltRounds: number): Promise<string> {
+    // For demo purposes, return the password as-is
+    // In a real app, this would be handled server-side
+    return password;
+  }
+};
+
+const mockJwt = {
+  sign(payload: any, secret: string, options?: any): string {
+    // Create a simple mock token
+    const tokenData = {
+      ...payload,
+      exp: Date.now() + (24 * 60 * 60 * 1000), // 24 hours
+      iat: Date.now()
+    };
+    return btoa(JSON.stringify(tokenData));
+  },
+  
+  verify(token: string, secret: string): any {
+    try {
+      const decoded = JSON.parse(atob(token));
+      if (decoded.exp < Date.now()) {
+        throw new Error('Token expired');
+      }
+      return decoded;
+    } catch (error) {
+      throw new Error('Invalid token');
+    }
+  }
+};
+
+const JWT_SECRET = 'mock-secret-key';
 
 export class AuthService {
   static async signIn(email: string, password: string): Promise<{ user: User; token: string } | null> {
@@ -14,7 +51,7 @@ export class AuthService {
         return null;
       }
 
-      const isValidPassword = await bcrypt.compare(password, row.password);
+      const isValidPassword = await mockBcrypt.compare(password, row.password);
       if (!isValidPassword) {
         return null;
       }
@@ -37,7 +74,7 @@ export class AuthService {
         (user as any).stats = row.stats;
       }
 
-      const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, {
+      const token = mockJwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, {
         expiresIn: '24h'
       });
 
@@ -56,7 +93,7 @@ export class AuthService {
     location: string;
   }): Promise<{ user: User; token: string }> {
     try {
-      const hashedPassword = await bcrypt.hash(userData.password, 10);
+      const hashedPassword = await mockBcrypt.hash(userData.password, 10);
       const userId = Date.now().toString();
 
       const newUser = {
@@ -92,7 +129,7 @@ export class AuthService {
         isActive: true
       };
 
-      const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, {
+      const token = mockJwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, {
         expiresIn: '24h'
       });
 
@@ -105,7 +142,7 @@ export class AuthService {
   static verifyToken(token: string): Promise<{ userId: string; role: string } | null> {
     return new Promise((resolve) => {
       try {
-        const decoded = jwt.verify(token, JWT_SECRET) as any;
+        const decoded = mockJwt.verify(token, JWT_SECRET) as any;
         resolve({ userId: decoded.userId, role: decoded.role });
       } catch (error) {
         resolve(null);
